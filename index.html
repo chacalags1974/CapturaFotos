@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Expediente Digital</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0f1117;
+            --surf: #1a1d27;
+            --surf2: #22263a;
+            --bdr: #2e3350;
+            --acc: #4f6ef7;
+            --grn: #22c55e;
+            --grn2: #16a34a;
+            --red: #ef4444;
+            --amb: #f59e0b;
+            --tx: #e8eaf0;
+            --tx2: #8890b0;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--tx);
+            min-height: 100vh;
+            padding-bottom: 48px
+        }
+
+        header {
+            background: var(--surf);
+            border-bottom: 1px solid var(--bdr);
+            padding: 13px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 30
+        }
+
+        .h-ttl {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--acc);
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .h-ttl span {
+            color: var(--tx)
+        }
+
+        .btn-ico {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--bdr);
+            background: var(--surf2);
+            border-radius: 8px;
+            color: var(--tx2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .15s
+        }
+
+        .btn-ico:hover {
+            color: var(--tx);
+            border-color: var(--acc)
+        }
+
+        main {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 18px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        .card {
+            background: var(--surf);
+            border: 1px solid var(--bdr);
+            border-radius: 14px;
+            padding: 16px
+        }
+
+        .ctit {
+            font-size: 10px;
+            font-family: var(--mono);
+            letter-spacing: .12em;
+            color: var(--tx2);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px
+        }
+
+        .ctit-l {
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--acc);
+            flex-shrink: 0
+        }
+
+        .ibar {
+            background: var(--surf2);
+            border: 1px solid var(--bdr);
+            border-radius: 10px;
+            padding: 9px 13px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            align-items: center
+        }
+
+        .chip {
+            background: var(--bg);
+            border: 1px solid var(--bdr);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--tx)
+        }
+
+        .chip .lb {
+            color: var(--tx2);
+            margin-right: 3px
+        }
+
+        .chip.empty {
+            color: var(--tx2);
+            font-style: italic
+        }
+
+        .contador {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--acc);
+            background: var(--bg);
+            border: 1px solid var(--bdr);
+            border-radius: 6px;
+            padding: 2px 8px;
+            margin-left: auto
+        }
+
+        .flbl {
+            font-size: 12px;
+            color: var(--tx2);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .breq {
+            font-size: 10px;
+            background: #3b1a1a;
+            border: 1px solid var(--red);
+            border-radius: 4px;
+            padding: 1px 5px;
+            color: var(--red)
+        }
+
+        input[type=text] {
+            width: 100%;
+            background: var(--surf2);
+            border: 1px solid var(--bdr);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--tx);
+            font-family: var(--mono);
+            font-size: 14px;
+            letter-spacing: .05em;
+            outline: none;
+            transition: border-color .15s
+        }
+
+        input[type=text]:focus {
+            border-color: var(--acc)
+        }
+
+        input[type=text]::placeholder {
+            color: var(--tx2);
+            font-size: 12px;
+            letter-spacing: 0;
+            font-family: var(--sans)
+        }
+
+        .ferr {
+            font-size: 11px;
+            color: var(--red);
+            margin-top: 5px;
+            display: none
+        }
+
+        .tbadge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            font-family: var(--mono);
+            padding: 2px 8px;
+            border-radius: 100px;
+            border: 1px solid var(--bdr);
+            background: var(--surf2);
+            color: var(--tx2)
+        }
+
+        .tbadge .dot {
+            width: 5px;
+            height: 5px
+        }
+
+        .tbadge.basica .dot {
+            background: var(--amb)
+        }
+
+        .tbadge.media .dot {
+            background: var(--acc)
+        }
+
+        .fgrid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .frow {
+            background: var(--surf2);
+            border: 1px solid var(--bdr);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            transition: all .2s
+        }
+
+        .frow.s-act {
+            border-color: var(--acc);
+            background: #191e35
+        }
+
+        .frow.s-cap {
+            border-color: #2a5c3f;
+            background: #0f1f17
+        }
+
+        .frow.s-ok {
+            border-color: var(--grn);
+            background: #0c1f15
+        }
+
+        .frow.s-blq {
+            opacity: .4
+        }
+
+        .fnum {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 1px solid var(--bdr);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--tx2);
+            flex-shrink: 0
+        }
+
+        .frow.s-act .fnum {
+            background: var(--acc);
+            color: #fff;
+            border-color: var(--acc)
+        }
+
+        .frow.s-cap .fnum {
+            background: #2a5c3f;
+            color: #fff;
+            border-color: #2a5c3f
+        }
+
+        .frow.s-ok .fnum {
+            background: var(--grn);
+            color: #fff;
+            border-color: var(--grn)
+        }
+
+        .finfo {
+            flex: 1;
+            min-width: 90px
+        }
+
+        .fnombre {
+            font-size: 13px;
+            font-weight: 600
+        }
+
+        .frow.s-blq .fnombre {
+            color: var(--tx2)
+        }
+
+        .festado {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--tx2);
+            margin-top: 2px
+        }
+
+        .frow.s-act .festado {
+            color: var(--acc)
+        }
+
+        .frow.s-cap .festado {
+            color: #4ade80
+        }
+
+        .frow.s-ok .festado {
+            color: var(--grn)
+        }
+
+        .fthumb {
+            width: 46px;
+            height: 46px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid var(--bdr);
+            flex-shrink: 0
+        }
+
+        .facc {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+            flex-wrap: wrap
+        }
+
+        .fb {
+            padding: 6px 10px;
+            border-radius: 7px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: all .15s;
+            font-family: var(--sans)
+        }
+
+        .fb:active {
+            transform: scale(.96)
+        }
+
+        .fb-cam {
+            background: var(--acc);
+            color: #fff
+        }
+
+        .fb-cam.cap {
+            background: #163d25;
+            color: #4ade80;
+            border: 1px solid #2a5c3f
+        }
+
+        .fb-cam.blq {
+            background: var(--bg);
+            color: var(--tx2);
+            cursor: not-allowed
+        }
+
+        .fb-save {
+            background: var(--grn);
+            color: #fff
+        }
+
+        .fb-save:hover {
+            background: var(--grn2)
+        }
+
+        .fb-dl {
+            background: #1e293b;
+            color: #facc15;
+            border: 1px solid #facc15
+        }
+
+        .fb-saved {
+            background: #0c2e1a;
+            color: var(--grn);
+            border: 1px solid var(--grn);
+            cursor: default
+        }
+
+        .pwrap {
+            background: var(--surf2);
+            border-radius: 100px;
+            height: 4px;
+            overflow: hidden;
+            margin-top: 14px
+        }
+
+        .pbar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--acc), var(--grn));
+            border-radius: 100px;
+            transition: width .3s ease
+        }
+
+        .plbl {
+            font-size: 10px;
+            font-family: var(--mono);
+            color: var(--tx2);
+            text-align: right;
+            margin-top: 5px
+        }
+
+        .btn-zip {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: var(--sans);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all .2s;
+            letter-spacing: .02em
+        }
+
+        .btn-zip.listo {
+            background: linear-gradient(135deg, var(--grn), var(--grn2));
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(34, 197, 94, .3)
+        }
+
+        .btn-zip.listo:active {
+            transform: scale(.98)
+        }
+
+        .btn-zip.pend {
+            background: var(--surf2);
+            color: var(--tx2);
+            border: 1px solid var(--bdr);
+            cursor: not-allowed
+        }
+
+        .btn-new-exp {
+            background: var(--grn);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s
+        }
+
+        .btn-new-exp:hover {
+            background: var(--grn2)
+        }
+
+        .moverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .78);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .moverlay.vis {
+            display: flex
+        }
+
+        .mbox {
+            background: var(--surf);
+            border: 1px solid var(--bdr);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 420px;
+            padding: 22px;
+            max-height: 90vh;
+            overflow-y: auto
+        }
+
+        .mhdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px
+        }
+
+        .mttl {
+            font-size: 15px;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--tx)
+        }
+
+        .btn-x {
+            width: 30px;
+            height: 30px;
+            background: var(--surf2);
+            border: 1px solid var(--bdr);
+            border-radius: 6px;
+            color: var(--tx2);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .mfields {
+            display: flex;
+            flex-direction: column;
+            gap: 13px
+        }
+
+        .mf label {
+            display: block;
+            font-size: 11px;
+            font-family: var(--mono);
+            color: var(--tx2);
+            margin-bottom: 4px
+        }
+
+        select {
+            width: 100%;
+            background: var(--surf2);
+            border: 1px solid var(--bdr);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--tx);
+            font-size: 13px;
+            outline: none;
+            cursor: pointer
+        }
+
+        select:focus {
+            border-color: var(--acc)
+        }
+
+        .btn-csave {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: var(--acc);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: opacity .15s
+        }
+
+        .btn-csave:hover {
+            opacity: .9
+        }
+
+        ::-webkit-scrollbar {
+            width: 3px
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bdr);
+            border-radius: 4px
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="h-ttl">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h3"/></svg>
+            <span>Expediente</span> Digital
+        </div>
+        <button class="btn-ico" id="btnCfg">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+    </header>
+
+    <main>
+
+        <div class="ibar" id="ibar">
+            <span class="chip empty">Sin configurar — toca ⚙ para configurar</span>
+            <span class="contador" id="contadorSesion">Expedientes hoy: 0</span>
+        </div>
+
+        <div class="card">
+            <div class="ctit">
+                <div class="ctit-l"><span class="dot"></span>CURP del Beneficiario</div>
+                <button class="btn-new-exp" id="btnNuevoExp">➕ Nuevo expediente</button>
+            </div>
+            <div class="flbl">CURP <span class="breq">Obligatoria</span></div>
+            <input type="text" id="inCURP" maxlength="18" placeholder="Ej: PEHM050101HDFRRN01" autocomplete="off" spellcheck="false">
+            <div class="ferr" id="errCURP">La CURP es obligatoria — 18 caracteres alfanuméricos</div>
+        </div>
+
+        <div class="card">
+            <div class="ctit">
+                <div class="ctit-l"><span class="dot"></span>Fotos requeridas</div>
+                <span class="tbadge basica" id="tbadge"><span class="dot"></span><span id="tbadgeTxt">Básica · 4 fotos</span></span>
+            </div>
+            <div class="fgrid" id="fgrid"></div>
+            <div class="pwrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+            <div class="plbl" id="plbl">0 / 4 fotos guardadas</div>
+        </div>
+
+        <button class="btn-zip pend" id="btnZip" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            DESCARGAR ZIP DEL EXPEDIENTE
+        </button>
+
+    </main>
+
+    <!-- MODAL CONFIGURACIÓN -->
+    <div class="moverlay" id="mCfg">
+        <div class="mbox">
+            <div class="mhdr">
+                <div class="mttl">⚙ Configuración</div>
+                <button class="btn-x" id="btnX">&times;</button>
+            </div>
+            <div class="mfields">
+                <div class="mf">
+                    <label>Nombre del servidor educativo</label>
+                    <input type="text" id="cNombre" placeholder="Nombre completo">
+                </div>
+                <div class="mf">
+                    <label>CUPO del servidor educativo</label>
+                    <input type="text" id="cCUPO" maxlength="7" placeholder="CUPO (6-7 dígitos)">
+                </div>
+                <div class="mf">
+                    <label>Nombre de sede de entrega</label>
+                    <input type="text" id="cSede" placeholder="Nombre de la sede">
+                </div>
+                <div class="mf">
+                    <label>CCT de entrega</label>
+                    <input type="text" id="cCCT" placeholder="Clave de centro de trabajo">
+                </div>
+                <div class="mf">
+                    <label>Tipo de entrega</label>
+                    <select id="cTipo">
+                        <option value="basica">Educación Básica (4 fotos)</option>
+                        <option value="media">Media Superior / Superior (5 fotos)</option>
+                    </select>
+                    <div style="font-size:10px;color:var(--tx2);margin-top:4px">Cambiar tipo reinicia las fotos actuales.</div>
+                </div>
+                <button class="btn-csave" id="btnSaveCfg">Guardar configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO EXPEDIENTE -->
+    <div class="moverlay" id="mNuevo">
+        <div class="mbox">
+            <div class="mhdr">
+                <div class="mttl">➕ Nuevo expediente</div>
+                <button class="btn-x" id="btnXNew">&times;</button>
+            </div>
+            <div class="mfields">
+                <div class="mf">
+                    <label>Tipo de expediente</label>
+                    <select id="nTipo">
+                        <option value="basica">Básica (4 fotos)</option>
+                        <option value="media">Media Superior / Superior (5 fotos)</option>
+                    </select>
+                </div>
+                <button class="btn-csave" id="btnIniciarNuevo">Iniciar nuevo expediente</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── LABELS ──────────────────────────────────────────────────────
+        const LBL_BAS = [
+            { key: "FOTO_1", nombre: "FOTO 1" },
+            { key: "FOTO_2", nombre: "FOTO 2" },
+            { key: "FOTO_3", nombre: "FOTO 3" },
+            { key: "FOTO_4", nombre: "FOTO 4" },
+        ];
+        const LBL_MED = [
+            { key: "INE_FRENTE", nombre: "INE Frente" },
+            { key: "INE_ATRAS", nombre: "INE Atrás" },
+            { key: "CONTRATO", nombre: "Contrato" },
+            { key: "FOTO_ENTREGA", nombre: "Foto Entrega" },
+            { key: "FOTO_ADICIONAL", nombre: "Foto Adicional" },
+        ];
+
+        const SK_CFG = "expdig_cfg_v3";
+
+        // ── ESTADO ───────────────────────────────────────────────────────
+        let cfg = { nombre: "", cupo: "", sede: "", cct: "", tipo: "basica" };
+        let fotos = [];
+        let contadorSesion = 0; // contador manual de expedientes creados en esta sesión
+
+        // ── PERSISTENCIA (solo configuración) ─────────────────────────────
+        function cfgLoad() { try { const s = localStorage.getItem(SK_CFG); if (s) cfg = { ...cfg, ...JSON.parse(s) }; } catch (e) {} }
+
+        function cfgSave() { localStorage.setItem(SK_CFG, JSON.stringify(cfg)); }
+
+        // ── HELPERS ──────────────────────────────────────────────────────
+        function labels() { return cfg.tipo === "basica" ? LBL_BAS : LBL_MED; }
+
+        function getCURP() { return document.getElementById("inCURP").value.trim().toUpperCase(); }
+
+        function validaCURP(c) { return c && /^[A-Z0-9]{18}$/i.test(c); }
+
+        function dataURLtoBlob(dataURL) {
+            const [hdr, b64] = dataURL.split(",");
+            const mime = hdr.match(/:(.*?);/)[1];
+            const raw = atob(b64);
+            const arr = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        }
+
+        function descargar(blob, nombre) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = nombre;
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url);
+                a.remove(); }, 600);
+        }
+
+        function hoy() { return new Date().toISOString().slice(0, 10); }
+
+        function actualizarContador() {
+            document.getElementById("contadorSesion").textContent = `Expedientes hoy: ${contadorSesion}`;
+        }
+
+        // ── INIT FOTOS ───────────────────────────────────────────────────
+        function initFotos() { fotos = labels().map(l => ({ ...l, dataURL: null, guardada: false })); }
+
+        // ── INFO BAR ─────────────────────────────────────────────────────
+        function renderIBar() {
+            const bar = document.getElementById("ibar");
+            const c = [];
+            if (cfg.nombre) c.push(`<span class="chip"><span class="lb">Servidor:</span>${cfg.nombre}</span>`);
+            if (cfg.cupo) c.push(`<span class="chip"><span class="lb">CUPO:</span>${cfg.cupo}</span>`);
+            if (cfg.sede) c.push(`<span class="chip"><span class="lb">Sede:</span>${cfg.sede}</span>`);
+            if (cfg.cct) c.push(`<span class="chip"><span class="lb">CCT:</span>${cfg.cct}</span>`);
+            if (!c.length) c.push('<span class="chip empty">Sin configurar — toca ⚙</span>');
+            bar.innerHTML = c.join("") + `<span class="contador" id="contadorSesion">Expedientes hoy: ${contadorSesion}</span>`;
+        }
+
+        // ── RENDER FOTOS ─────────────────────────────────────────────────
+        function renderFotos() {
+            const grid = document.getElementById("fgrid");
+            grid.innerHTML = "";
+
+            const idxAct = fotos.findIndex(f => !f.guardada);
+
+            fotos.forEach((foto, idx) => {
+                const guardada = foto.guardada;
+                const tieneImg = !!foto.dataURL;
+                const activa = idx === idxAct && !guardada;
+                const bloq = !guardada && !activa;
+
+                let sc = "s-blq";
+                if (guardada) sc = "s-ok";
+                else if (activa && tieneImg) sc = "s-cap";
+                else if (activa) sc = "s-act";
+
+                const row = document.createElement("div");
+                row.className = `frow ${sc}`;
+
+                const num = document.createElement("div");
+                num.className = "fnum";
+                num.innerHTML = guardada ?
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>` :
+                    `${idx+1}`;
+
+                let estTxt = bloq ? "Bloqueada" : guardada ? "✓ Guardada" : tieneImg ?
+                    "📷 Lista — Descarga / Continúa" : "▶ Activa — toca Cámara";
+                const info = document.createElement("div");
+                info.className = "finfo";
+                info.innerHTML =
+                    `<div class="fnombre">${foto.nombre}</div><div class="festado">${estTxt}</div>`;
+
+                let thumb = null;
+                if (tieneImg) {
+                    thumb = document.createElement("img");
+                    thumb.className = "fthumb";
+                    thumb.src = foto.dataURL;
+                    thumb.alt = foto.nombre;
+                }
+
+                const acc = document.createElement("div");
+                acc.className = "facc";
+
+                const fi = document.createElement("input");
+                fi.type = "file";
+                fi.accept = "image/*";
+                fi.capture = "environment";
+                fi.style.display = "none";
+                fi.addEventListener("change", function() {
+                    const f = this.files[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = ev => { fotos[idx].dataURL = ev.target.result;
+                        this.value = "";
+                        renderFotos(); };
+                    r.readAsDataURL(f);
+                });
+
+                if (tieneImg && !guardada) {
+                    const bc = document.createElement("button");
+                    bc.className = "fb fb-cam cap";
+                    bc.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Retomar`;
+                    bc.addEventListener("click", () => fi.click());
+                    acc.appendChild(bc);
+
+                    const bd = document.createElement("button");
+                    bd.className = "fb fb-dl";
+                    bd.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Descargar foto`;
+                    bd.addEventListener("click", () => {
+                        const curp = getCURP();
+                        if (!validaCURP(curp)) {
+                            alert("Primero ingresa la CURP del beneficiario.");
+                            document.getElementById("inCURP").focus();
+                            return;
+                        }
+                        descargar(dataURLtoBlob(foto.dataURL), `${curp}_${foto.key}.jpg`);
+                    });
+                    acc.appendChild(bd);
+
+                    const bs = document.createElement("button");
+                    bs.className = "fb fb-save";
+                    bs.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Continuar`;
+                    bs.addEventListener("click", () => {
+                        fotos[idx].guardada = true;
+                        renderFotos();
+                    });
+                    acc.appendChild(bs);
+                }
+
+                if (!tieneImg && !guardada && activa) {
+                    const bc = document.createElement("button");
+                    bc.className = "fb fb-cam";
+                    bc.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Cámara`;
+                    bc.addEventListener("click", () => fi.click());
+                    acc.appendChild(bc);
+                }
+
+                if (bloq) {
+                    const bc = document.createElement("button");
+                    bc.className = "fb fb-cam blq";
+                    bc.disabled = true;
+                    bc.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Bloqueada`;
+                    acc.appendChild(bc);
+                }
+
+                if (guardada) {
+                    const tag = document.createElement("span");
+                    tag.className = "fb fb-saved";
+                    tag.innerHTML =
+                        `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Guardada`;
+                    acc.appendChild(tag);
+                }
+
+                row.appendChild(num);
+                row.appendChild(info);
+                if (thumb) row.appendChild(thumb);
+                row.appendChild(acc);
+                row.appendChild(fi);
+                grid.appendChild(row);
+            });
+
+            actuProg();
+            actuBtnZip();
+            actuBadge();
+        }
+
+        // ── PROGRESS ─────────────────────────────────────────────────────
+        function actuProg() {
+            const tot = fotos.length;
+            const gu = fotos.filter(f => f.guardada).length;
+            const pct = tot ? Math.round(gu / tot * 100) : 0;
+            document.getElementById("pbar").style.width = pct + "%";
+            document.getElementById("plbl").textContent = `${gu} / ${tot} fotos guardadas`;
+        }
+
+        function actuBtnZip() {
+            const btn = document.getElementById("btnZip");
+            const ok = fotos.length > 0 && fotos.every(f => f.guardada);
+            btn.className = "btn-zip " + (ok ? "listo" : "pend");
+            btn.disabled = !ok;
+        }
+
+        function actuBadge() {
+            const b = document.getElementById("tbadge");
+            const t = document.getElementById("tbadgeTxt");
+            if (cfg.tipo === "basica") { b.className = "tbadge basica";
+                t.textContent = "Básica · 4 fotos"; } else { b.className = "tbadge media";
+                t.textContent = "Media/Superior · 5 fotos"; }
+        }
+
+        // ── GENERAR ZIP DEL EXPEDIENTE ACTUAL ────────────────────────────
+        async function generarZip() {
+            const curp = getCURP();
+            if (!validaCURP(curp)) { document.getElementById("errCURP").style.display = "block"; return; }
+            if (!fotos.every(f => f.guardada)) { alert("Primero debes completar todas las fotos con el botón ✓ Continuar."); return; }
+
+            const btn = document.getElementById("btnZip");
+            btn.disabled = true;
+            btn.innerHTML =
+                `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando ZIP…`;
+
+            try {
+                const fechaHoy = hoy();
+                const cupoActual = cfg.cupo || 'SIN_CUPO';
+                const raiz = `${fechaHoy}_${cupoActual}`;
+                const zip = new JSZip();
+                const carpetaRaiz = zip.folder(raiz);
+                const carpetaCurp = carpetaRaiz.folder(curp);
+                fotos.forEach(f => carpetaCurp.file(`${curp}_${f.key}.jpg`, dataURLtoBlob(f.dataURL)));
+
+                const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE",
+                    compressionOptions: { level: 6 } });
+                descargar(blob, `${raiz}.zip`);
+
+                btn.innerHTML =
+                    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ¡ZIP descargado!`;
+                setTimeout(() => {
+                    btn.innerHTML =
+                        `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> DESCARGAR ZIP DEL EXPEDIENTE`;
+                    btn.disabled = false;
+                    actuBtnZip();
+                }, 2500);
+            } catch (e) {
+                alert("Error al generar ZIP: " + e.message);
+                btn.disabled = false;
+                actuBtnZip();
+            }
+        }
+
+        // ── NUEVO EXPEDIENTE ─────────────────────────────────────────────
+        function abrirNuevo() {
+            document.getElementById("nTipo").value = cfg.tipo;
+            document.getElementById("mNuevo").classList.add("vis");
+        }
+
+        function cerrarNuevo() { document.getElementById("mNuevo").classList.remove("vis"); }
+
+        function iniciarNuevo() {
+            const tipoSeleccionado = document.getElementById("nTipo").value;
+            if (tipoSeleccionado !== cfg.tipo) {
+                cfg.tipo = tipoSeleccionado;
+                cfgSave();
+                initFotos();
+            }
+            document.getElementById("inCURP").value = "";
+            initFotos(); // reinicia fotos
+            contadorSesion++;
+            actualizarContador();
+            renderIBar();
+            renderFotos();
+            document.getElementById("inCURP").focus();
+            cerrarNuevo();
+        }
+
+        // ── CONFIGURACIÓN ────────────────────────────────────────────────
+        function abrirModal() {
+            document.getElementById("cNombre").value = cfg.nombre;
+            document.getElementById("cCUPO").value = cfg.cupo;
+            document.getElementById("cSede").value = cfg.sede;
+            document.getElementById("cCCT").value = cfg.cct;
+            document.getElementById("cTipo").value = cfg.tipo;
+            document.getElementById("mCfg").classList.add("vis");
+        }
+
+        function cerrarModal() { document.getElementById("mCfg").classList.remove("vis"); }
+
+        function guardarCfg() {
+            const nuevoTipo = document.getElementById("cTipo").value;
+            const cambio = nuevoTipo !== cfg.tipo;
+            cfg.nombre = document.getElementById("cNombre").value.trim();
+            cfg.cupo = document.getElementById("cCUPO").value.trim();
+            cfg.sede = document.getElementById("cSede").value.trim();
+            cfg.cct = document.getElementById("cCCT").value.trim();
+            cfg.tipo = nuevoTipo;
+            cfgSave();
+            cerrarModal();
+            renderIBar();
+            if (cambio) { document.getElementById("inCURP").value = "";
+                initFotos(); }
+            renderFotos();
+            const b = document.getElementById("btnCfg");
+            b.style.borderColor = "var(--grn)";
+            setTimeout(() => { b.style.borderColor = ""; }, 800);
+        }
+
+        // ── EVENTOS ──────────────────────────────────────────────────────
+        document.getElementById("btnCfg").addEventListener("click", abrirModal);
+        document.getElementById("btnX").addEventListener("click", cerrarModal);
+        document.getElementById("mCfg").addEventListener("click", e => { if (e.target === document.getElementById(
+                "mCfg")) cerrarModal(); });
+        document.getElementById("btnSaveCfg").addEventListener("click", guardarCfg);
+
+        document.getElementById("btnNuevoExp").addEventListener("click", abrirNuevo);
+        document.getElementById("btnXNew").addEventListener("click", cerrarNuevo);
+        document.getElementById("mNuevo").addEventListener("click", e => { if (e.target === document.getElementById(
+                "mNuevo")) cerrarNuevo(); });
+        document.getElementById("btnIniciarNuevo").addEventListener("click", iniciarNuevo);
+
+        document.getElementById("btnZip").addEventListener("click", generarZip);
+
+        document.getElementById("inCURP").addEventListener("input", function() {
+            this.value = this.value.toUpperCase();
+            document.getElementById("errCURP").style.display = "none";
+        });
+        document.getElementById("cCUPO").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
+
+        // ── INICIO ───────────────────────────────────────────────────────
+        cfgLoad();
+        initFotos();
+        renderIBar();
+        renderFotos();
+        actualizarContador();
+    </script>
+</body>
+</html>
