@@ -19,10 +19,20 @@ const SK_CFG = "expdig_cfg_v3";
 let cfg = { nombre: "", cupo: "", sede: "", cct: "", tipo: "basica" };
 let fotos = [];
 let contadorSesion = 0;
-let infoExpandido = true;  // Control de colapso
+let infoExpandido = true;
 
 // ── PERSISTENCIA ──────────────────────────────────────────────
-function cfgLoad() { try { const s = localStorage.getItem(SK_CFG); if (s) cfg = { ...cfg, ...JSON.parse(s) }; } catch (e) {} }
+function cfgLoad() {
+    try {
+        const s = localStorage.getItem(SK_CFG);
+        if (s) {
+            const loaded = JSON.parse(s);
+            cfg = { ...cfg, ...loaded };
+        }
+    } catch (e) {}
+    // Asegurar que tipo siempre sea válido
+    if (cfg.tipo !== "basica" && cfg.tipo !== "media") cfg.tipo = "basica";
+}
 function cfgSave() { localStorage.setItem(SK_CFG, JSON.stringify(cfg)); }
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -53,13 +63,17 @@ function actualizarContador() {
     if (contSpan) contSpan.textContent = `Expedientes hoy: ${contadorSesion}`;
 }
 
-// ── INIT FOTOS ─────────────────────────────────────────────────
-function initFotos() { fotos = labels().map(l => ({ ...l, dataURL: null, guardada: false })); }
+// ── INIT FOTOS (con render posterior) ─────────────────────────
+function initFotos() {
+    fotos = labels().map(l => ({ ...l, dataURL: null, guardada: false }));
+}
 
-// ── INFO BAR (con toggle) ──────────────────────────────────────
+// ── INFO BAR CON TOGGLE (sin duplicar botón) ──────────────────
 function renderIBar() {
     const bar = document.getElementById("ibar");
     if (!bar) return;
+
+    // Buscar o crear el botón toggle
     let toggleBtn = document.getElementById("toggleInfoBtn");
     if (!toggleBtn) {
         toggleBtn = document.createElement("button");
@@ -67,12 +81,12 @@ function renderIBar() {
         toggleBtn.className = "btn-toggle";
         toggleBtn.addEventListener("click", () => {
             infoExpandido = !infoExpandido;
-            renderIBar();
+            renderIBar();  // reconstruir la barra
         });
         bar.appendChild(toggleBtn);
     }
 
-    // Construir chips
+    // Construir chips según modo
     const chips = [];
     if (infoExpandido) {
         if (cfg.nombre) chips.push(`<span class="chip"><span class="lb">Servidor:</span>${cfg.nombre}</span>`);
@@ -88,12 +102,13 @@ function renderIBar() {
         toggleBtn.textContent = "+";
     }
 
-    // Limpiar y volver a llenar la barra
+    // Limpiar y reconstruir contenido (conservando el botón)
+    const oldToggle = document.getElementById("toggleInfoBtn");
     bar.innerHTML = "";
-    const chipsContainer = document.createElement("span");
-    chipsContainer.innerHTML = chips.join("");
-    bar.appendChild(chipsContainer);
-    bar.appendChild(toggleBtn);
+    const chipsSpan = document.createElement("span");
+    chipsSpan.innerHTML = chips.join("");
+    bar.appendChild(chipsSpan);
+    bar.appendChild(oldToggle);  // reinsertar el mismo botón
     const contSpan = document.createElement("span");
     contSpan.className = "contador";
     contSpan.id = "contadorSesion";
@@ -101,7 +116,7 @@ function renderIBar() {
     bar.appendChild(contSpan);
 }
 
-// ── RENDER FOTOS (sin cambios) ─────────────────────────────────
+// ── RENDER FOTOS (sin cambios funcionales) ────────────────────
 function renderFotos() {
     const grid = document.getElementById("fgrid");
     grid.innerHTML = "";
@@ -253,7 +268,11 @@ function abrirNuevo() {
 function cerrarNuevo() { document.getElementById("mNuevo").classList.remove("vis"); }
 function iniciarNuevo() {
     const tipoSeleccionado = document.getElementById("nTipo").value;
-    if (tipoSeleccionado !== cfg.tipo) { cfg.tipo = tipoSeleccionado; cfgSave(); initFotos(); }
+    if (tipoSeleccionado !== cfg.tipo) {
+        cfg.tipo = tipoSeleccionado;
+        cfgSave();
+        initFotos();
+    }
     document.getElementById("inCURP").value = "";
     initFotos();
     contadorSesion++;
@@ -284,8 +303,11 @@ function guardarCfg() {
     cfgSave();
     cerrarModal();
     renderIBar();
-    if (cambio) { document.getElementById("inCURP").value = ""; initFotos(); }
-    renderFotos();
+    if (cambio) {
+        document.getElementById("inCURP").value = "";
+        initFotos();
+        renderFotos();
+    }
     const b = document.getElementById("btnCfg");
     b.style.borderColor = "var(--grn)";
     setTimeout(() => { b.style.borderColor = ""; }, 800);
@@ -304,9 +326,9 @@ document.getElementById("btnZip").addEventListener("click", generarZip);
 document.getElementById("inCURP").addEventListener("input", function() { this.value = this.value.toUpperCase(); document.getElementById("errCURP").style.display = "none"; });
 document.getElementById("cCUPO").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
 
-// ── INICIO ────────────────────────────────────────────────────
+// ── INICIO CORREGIDO: carga la configuración, inicializa fotos y renderiza todo ──
 cfgLoad();
-initFotos();
+initFotos();        // se construye con el tipo actual (básica por defecto)
 renderIBar();
 renderFotos();
 actualizarContador();
