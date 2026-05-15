@@ -1,4 +1,4 @@
-// ── LABELS (orden y nombres actualizados) ────────────────────────
+// ── LABELS (orden actualizado) ──────────────────────────────────
 const LBL_BAS = [
     { key: "INE_FRENTE", nombre: "INE Frente" },
     { key: "INE_ATRAS", nombre: "INE Atrás" },
@@ -16,16 +16,16 @@ const LBL_MED = [
 
 const SK_CFG = "expdig_cfg_v3";
 
-// ── ESTADO ───────────────────────────────────────────────────────
 let cfg = { nombre: "", cupo: "", sede: "", cct: "", tipo: "basica" };
 let fotos = [];
 let contadorSesion = 0;
+let infoExpandido = true;  // Control de colapso
 
-// ── PERSISTENCIA (solo configuración) ─────────────────────────────
+// ── PERSISTENCIA ──────────────────────────────────────────────
 function cfgLoad() { try { const s = localStorage.getItem(SK_CFG); if (s) cfg = { ...cfg, ...JSON.parse(s) }; } catch (e) {} }
 function cfgSave() { localStorage.setItem(SK_CFG, JSON.stringify(cfg)); }
 
-// ── HELPERS ──────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────
 function labels() { return cfg.tipo === "basica" ? LBL_BAS : LBL_MED; }
 function getCURP() { return document.getElementById("inCURP").value.trim().toUpperCase(); }
 function validaCURP(c) { return c && /^[A-Z0-9]{18}$/i.test(c); }
@@ -49,58 +49,81 @@ function descargar(blob, nombre) {
 }
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function actualizarContador() {
-    document.getElementById("contadorSesion").textContent = `Expedientes hoy: ${contadorSesion}`;
+    const contSpan = document.getElementById("contadorSesion");
+    if (contSpan) contSpan.textContent = `Expedientes hoy: ${contadorSesion}`;
 }
 
-// ── INIT FOTOS ───────────────────────────────────────────────────
+// ── INIT FOTOS ─────────────────────────────────────────────────
 function initFotos() { fotos = labels().map(l => ({ ...l, dataURL: null, guardada: false })); }
 
-// ── INFO BAR ─────────────────────────────────────────────────────
+// ── INFO BAR (con toggle) ──────────────────────────────────────
 function renderIBar() {
     const bar = document.getElementById("ibar");
-    const c = [];
-    if (cfg.nombre) c.push(`<span class="chip"><span class="lb">Servidor:</span>${cfg.nombre}</span>`);
-    if (cfg.cupo) c.push(`<span class="chip"><span class="lb">CUPO:</span>${cfg.cupo}</span>`);
-    if (cfg.sede) c.push(`<span class="chip"><span class="lb">Sede:</span>${cfg.sede}</span>`);
-    if (cfg.cct) c.push(`<span class="chip"><span class="lb">CCT:</span>${cfg.cct}</span>`);
-    if (!c.length) c.push('<span class="chip empty">Sin configurar — toca ⚙</span>');
-    bar.innerHTML = c.join("") + `<span class="contador" id="contadorSesion">Expedientes hoy: ${contadorSesion}</span>`;
+    if (!bar) return;
+    let toggleBtn = document.getElementById("toggleInfoBtn");
+    if (!toggleBtn) {
+        toggleBtn = document.createElement("button");
+        toggleBtn.id = "toggleInfoBtn";
+        toggleBtn.className = "btn-toggle";
+        toggleBtn.addEventListener("click", () => {
+            infoExpandido = !infoExpandido;
+            renderIBar();
+        });
+        bar.appendChild(toggleBtn);
+    }
+
+    // Construir chips
+    const chips = [];
+    if (infoExpandido) {
+        if (cfg.nombre) chips.push(`<span class="chip"><span class="lb">Servidor:</span>${cfg.nombre}</span>`);
+        if (cfg.cupo) chips.push(`<span class="chip"><span class="lb">CUPO:</span>${cfg.cupo}</span>`);
+        if (cfg.sede) chips.push(`<span class="chip"><span class="lb">Sede:</span>${cfg.sede}</span>`);
+        if (cfg.cct) chips.push(`<span class="chip"><span class="lb">CCT:</span>${cfg.cct}</span>`);
+        if (!chips.length) chips.push('<span class="chip empty">Sin configurar — toca ⚙</span>');
+        toggleBtn.textContent = "^";
+    } else {
+        if (cfg.cupo) chips.push(`<span class="chip"><span class="lb">CUPO:</span>${cfg.cupo}</span>`);
+        if (cfg.cct) chips.push(`<span class="chip"><span class="lb">CCT:</span>${cfg.cct}</span>`);
+        if (!chips.length) chips.push('<span class="chip empty">Sin configurar — toca ⚙</span>');
+        toggleBtn.textContent = "+";
+    }
+
+    // Limpiar y volver a llenar la barra
+    bar.innerHTML = "";
+    const chipsContainer = document.createElement("span");
+    chipsContainer.innerHTML = chips.join("");
+    bar.appendChild(chipsContainer);
+    bar.appendChild(toggleBtn);
+    const contSpan = document.createElement("span");
+    contSpan.className = "contador";
+    contSpan.id = "contadorSesion";
+    contSpan.textContent = `Expedientes hoy: ${contadorSesion}`;
+    bar.appendChild(contSpan);
 }
 
-// ── RENDER FOTOS ─────────────────────────────────────────────────
+// ── RENDER FOTOS (sin cambios) ─────────────────────────────────
 function renderFotos() {
     const grid = document.getElementById("fgrid");
     grid.innerHTML = "";
-
     const idxAct = fotos.findIndex(f => !f.guardada);
-
     fotos.forEach((foto, idx) => {
         const guardada = foto.guardada;
         const tieneImg = !!foto.dataURL;
         const activa = idx === idxAct && !guardada;
         const bloq = !guardada && !activa;
-
         let sc = "s-blq";
         if (guardada) sc = "s-ok";
         else if (activa && tieneImg) sc = "s-cap";
         else if (activa) sc = "s-act";
-
         const row = document.createElement("div");
         row.className = `frow ${sc}`;
-
         const num = document.createElement("div");
         num.className = "fnum";
-        num.innerHTML = guardada ?
-            `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>` :
-            `${idx+1}`;
-
-        let estTxt = bloq ? "Bloqueada" : guardada ? "✓ Guardada" : tieneImg ?
-            "📷 Lista — Descarga / Continúa" : "▶ Activa — toca Cámara";
+        num.innerHTML = guardada ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>` : `${idx+1}`;
+        let estTxt = bloq ? "Bloqueada" : guardada ? "✓ Guardada" : tieneImg ? "📷 Lista — Descarga / Continúa" : "▶ Activa — toca Cámara";
         const info = document.createElement("div");
         info.className = "finfo";
-        info.innerHTML =
-            `<div class="fnombre">${foto.nombre}</div><div class="festado">${estTxt}</div>`;
-
+        info.innerHTML = `<div class="fnombre">${foto.nombre}</div><div class="festado">${estTxt}</div>`;
         let thumb = null;
         if (tieneImg) {
             thumb = document.createElement("img");
@@ -108,10 +131,8 @@ function renderFotos() {
             thumb.src = foto.dataURL;
             thumb.alt = foto.nombre;
         }
-
         const acc = document.createElement("div");
         acc.className = "facc";
-
         const fi = document.createElement("input");
         fi.type = "file";
         fi.accept = "image/*";
@@ -121,43 +142,30 @@ function renderFotos() {
             const f = this.files[0];
             if (!f) return;
             const r = new FileReader();
-            r.onload = ev => { fotos[idx].dataURL = ev.target.result;
-                this.value = "";
-                renderFotos(); };
+            r.onload = ev => { fotos[idx].dataURL = ev.target.result; this.value = ""; renderFotos(); };
             r.readAsDataURL(f);
         });
-
         if (tieneImg && !guardada) {
             const bc = document.createElement("button");
             bc.className = "fb fb-cam cap";
             bc.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Retomar`;
             bc.addEventListener("click", () => fi.click());
             acc.appendChild(bc);
-
             const bd = document.createElement("button");
             bd.className = "fb fb-dl";
             bd.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Descargar foto`;
             bd.addEventListener("click", () => {
                 const curp = getCURP();
-                if (!validaCURP(curp)) {
-                    alert("Primero ingresa la CURP del beneficiario.");
-                    document.getElementById("inCURP").focus();
-                    return;
-                }
+                if (!validaCURP(curp)) { alert("Primero ingresa la CURP del beneficiario."); document.getElementById("inCURP").focus(); return; }
                 descargar(dataURLtoBlob(foto.dataURL), `${curp}_${foto.key}.jpg`);
             });
             acc.appendChild(bd);
-
             const bs = document.createElement("button");
             bs.className = "fb fb-save";
             bs.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Continuar`;
-            bs.addEventListener("click", () => {
-                fotos[idx].guardada = true;
-                renderFotos();
-            });
+            bs.addEventListener("click", () => { fotos[idx].guardada = true; renderFotos(); });
             acc.appendChild(bs);
         }
-
         if (!tieneImg && !guardada && activa) {
             const bc = document.createElement("button");
             bc.className = "fb fb-cam";
@@ -165,7 +173,6 @@ function renderFotos() {
             bc.addEventListener("click", () => fi.click());
             acc.appendChild(bc);
         }
-
         if (bloq) {
             const bc = document.createElement("button");
             bc.className = "fb fb-cam blq";
@@ -173,14 +180,12 @@ function renderFotos() {
             bc.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Bloqueada`;
             acc.appendChild(bc);
         }
-
         if (guardada) {
             const tag = document.createElement("span");
             tag.className = "fb fb-saved";
             tag.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Guardada`;
             acc.appendChild(tag);
         }
-
         row.appendChild(num);
         row.appendChild(info);
         if (thumb) row.appendChild(thumb);
@@ -188,12 +193,11 @@ function renderFotos() {
         row.appendChild(fi);
         grid.appendChild(row);
     });
-
     actuProg();
+    actuBtnZip();
     actuBadge();
 }
 
-// ── PROGRESS ─────────────────────────────────────────────────────
 function actuProg() {
     const tot = fotos.length;
     const gu = fotos.filter(f => f.guardada).length;
@@ -202,44 +206,56 @@ function actuProg() {
     document.getElementById("plbl").textContent = `${gu} / ${tot} fotos guardadas`;
 }
 
+function actuBtnZip() {
+    const btn = document.getElementById("btnZip");
+    const ok = fotos.length > 0 && fotos.every(f => f.guardada);
+    btn.className = "btn-zip " + (ok ? "listo" : "pend");
+    btn.disabled = !ok;
+}
+
 function actuBadge() {
     const b = document.getElementById("tbadge");
     const t = document.getElementById("tbadgeTxt");
-    if (cfg.tipo === "basica") { 
-        b.className = "tbadge basica"; 
-        t.textContent = "Básica · 4 fotos"; 
-    } else { 
-        b.className = "tbadge media"; 
-        t.textContent = "Media/Superior · 5 fotos"; 
-    }
+    if (cfg.tipo === "basica") { b.className = "tbadge basica"; t.textContent = "Básica · 4 fotos"; }
+    else { b.className = "tbadge media"; t.textContent = "Media/Superior · 5 fotos"; }
 }
 
-// ── VERIFICAR SI EL EXPEDIENTE ACTUAL ESTÁ COMPLETO ──────────────
-function expedienteCompleto() {
-    return fotos.length > 0 && fotos.every(f => f.guardada);
+function expedienteCompleto() { return fotos.length > 0 && fotos.every(f => f.guardada); }
+
+async function generarZip() {
+    const curp = getCURP();
+    if (!validaCURP(curp)) { document.getElementById("errCURP").style.display = "block"; return; }
+    if (!expedienteCompleto()) { alert("Debes completar todas las fotos antes de descargar el ZIP."); return; }
+    const btn = document.getElementById("btnZip");
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando ZIP…`;
+    try {
+        const fechaHoy = hoy();
+        const cupoActual = cfg.cupo || 'SIN_CUPO';
+        const raiz = `${fechaHoy}_${cupoActual}`;
+        const zip = new JSZip();
+        const carpetaRaiz = zip.folder(raiz);
+        const carpetaCurp = carpetaRaiz.folder(curp);
+        fotos.forEach(f => carpetaCurp.file(`${curp}_${f.key}.jpg`, dataURLtoBlob(f.dataURL)));
+        const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
+        descargar(blob, `${raiz}.zip`);
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ¡ZIP descargado correctamente!`;
+        setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; actuBtnZip(); }, 3000);
+    } catch (e) { alert("Error al generar ZIP: " + e.message); btn.innerHTML = textoOriginal; btn.disabled = false; actuBtnZip(); }
 }
 
-// ── NUEVO EXPEDIENTE (con candado) ───────────────────────────────
 function abrirNuevo() {
-    if (!expedienteCompleto()) {
-        alert("No puedes iniciar un nuevo expediente hasta que completes todas las fotos del actual.\nPor favor, termina de guardar cada foto con el botón 'Continuar'.");
-        return;
-    }
+    if (!expedienteCompleto()) { alert("Completa todas las fotos antes de iniciar un nuevo expediente."); return; }
     document.getElementById("nTipo").value = cfg.tipo;
     document.getElementById("mNuevo").classList.add("vis");
 }
-
 function cerrarNuevo() { document.getElementById("mNuevo").classList.remove("vis"); }
-
 function iniciarNuevo() {
     const tipoSeleccionado = document.getElementById("nTipo").value;
-    if (tipoSeleccionado !== cfg.tipo) {
-        cfg.tipo = tipoSeleccionado;
-        cfgSave();
-        initFotos();
-    }
+    if (tipoSeleccionado !== cfg.tipo) { cfg.tipo = tipoSeleccionado; cfgSave(); initFotos(); }
     document.getElementById("inCURP").value = "";
-    initFotos(); // reinicia fotos
+    initFotos();
     contadorSesion++;
     actualizarContador();
     renderIBar();
@@ -248,7 +264,6 @@ function iniciarNuevo() {
     cerrarNuevo();
 }
 
-// ── CONFIGURACIÓN ────────────────────────────────────────────────
 function abrirModal() {
     document.getElementById("cNombre").value = cfg.nombre;
     document.getElementById("cCUPO").value = cfg.cupo;
@@ -257,9 +272,7 @@ function abrirModal() {
     document.getElementById("cTipo").value = cfg.tipo;
     document.getElementById("mCfg").classList.add("vis");
 }
-
 function cerrarModal() { document.getElementById("mCfg").classList.remove("vis"); }
-
 function guardarCfg() {
     const nuevoTipo = document.getElementById("cTipo").value;
     const cambio = nuevoTipo !== cfg.tipo;
@@ -271,34 +284,27 @@ function guardarCfg() {
     cfgSave();
     cerrarModal();
     renderIBar();
-    if (cambio) { 
-        document.getElementById("inCURP").value = "";
-        initFotos(); 
-    }
+    if (cambio) { document.getElementById("inCURP").value = ""; initFotos(); }
     renderFotos();
     const b = document.getElementById("btnCfg");
     b.style.borderColor = "var(--grn)";
     setTimeout(() => { b.style.borderColor = ""; }, 800);
 }
 
-// ── EVENTOS ──────────────────────────────────────────────────────
+// ── EVENTOS ───────────────────────────────────────────────────
 document.getElementById("btnCfg").addEventListener("click", abrirModal);
 document.getElementById("btnX").addEventListener("click", cerrarModal);
 document.getElementById("mCfg").addEventListener("click", e => { if (e.target === document.getElementById("mCfg")) cerrarModal(); });
 document.getElementById("btnSaveCfg").addEventListener("click", guardarCfg);
-
 document.getElementById("btnNuevoExp").addEventListener("click", abrirNuevo);
 document.getElementById("btnXNew").addEventListener("click", cerrarNuevo);
 document.getElementById("mNuevo").addEventListener("click", e => { if (e.target === document.getElementById("mNuevo")) cerrarNuevo(); });
 document.getElementById("btnIniciarNuevo").addEventListener("click", iniciarNuevo);
-
-document.getElementById("inCURP").addEventListener("input", function() {
-    this.value = this.value.toUpperCase();
-    document.getElementById("errCURP").style.display = "none";
-});
+document.getElementById("btnZip").addEventListener("click", generarZip);
+document.getElementById("inCURP").addEventListener("input", function() { this.value = this.value.toUpperCase(); document.getElementById("errCURP").style.display = "none"; });
 document.getElementById("cCUPO").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
 
-// ── INICIO ───────────────────────────────────────────────────────
+// ── INICIO ────────────────────────────────────────────────────
 cfgLoad();
 initFotos();
 renderIBar();
