@@ -436,40 +436,6 @@ input[type=text]::placeholder {
     margin-top: 5px
 }
 
-.btn-zip {
-    width: 100%;
-    padding: 14px;
-    border-radius: 10px;
-    border: none;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: var(--sans);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all .2s;
-    letter-spacing: .02em
-}
-
-.btn-zip.listo {
-    background: linear-gradient(135deg, var(--grn), var(--grn2));
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(34, 197, 94, .3)
-}
-
-.btn-zip.listo:active {
-    transform: scale(.98)
-}
-
-.btn-zip.pend {
-    background: var(--surf2);
-    color: var(--tx2);
-    border: 1px solid var(--bdr);
-    cursor: not-allowed
-}
-
 .btn-new-exp {
     background: var(--grn);
     color: #fff;
@@ -600,4 +566,3 @@ select:focus {
     background: var(--bdr);
     border-radius: 4px
 }
-
