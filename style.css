@@ -566,3 +566,29 @@ select:focus {
     background: var(--bdr);
     border-radius: 4px
 }
+.btn-toggle {
+    background: var(--surf2);
+    border: 1px solid var(--bdr);
+    border-radius: 30px;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--tx2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    margin-left: auto;
+}
+
+.btn-toggle:hover {
+    color: var(--acc);
+    border-color: var(--acc);
+}
+
+/* Ajuste para que el contador no se mueva */
+.contador {
+    margin-left: 8px;
+    }
