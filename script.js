@@ -190,7 +190,6 @@ function renderFotos() {
     });
 
     actuProg();
-    actuBtnZip();
     actuBadge();
 }
 
@@ -201,13 +200,6 @@ function actuProg() {
     const pct = tot ? Math.round(gu / tot * 100) : 0;
     document.getElementById("pbar").style.width = pct + "%";
     document.getElementById("plbl").textContent = `${gu} / ${tot} fotos guardadas`;
-}
-
-function actuBtnZip() {
-    const btn = document.getElementById("btnZip");
-    const ok = fotos.length > 0 && fotos.every(f => f.guardada);
-    btn.className = "btn-zip " + (ok ? "listo" : "pend");
-    btn.disabled = !ok;
 }
 
 function actuBadge() {
@@ -225,50 +217,6 @@ function actuBadge() {
 // ── VERIFICAR SI EL EXPEDIENTE ACTUAL ESTÁ COMPLETO ──────────────
 function expedienteCompleto() {
     return fotos.length > 0 && fotos.every(f => f.guardada);
-}
-
-// ── GENERAR ZIP DEL EXPEDIENTE ACTUAL ────────────────────────────
-async function generarZip() {
-    const curp = getCURP();
-    if (!validaCURP(curp)) { 
-        document.getElementById("errCURP").style.display = "block"; 
-        return; 
-    }
-    if (!expedienteCompleto()) { 
-        alert("Debes completar todas las fotos (presionando 'Continuar' en cada una) antes de descargar el ZIP.");
-        return; 
-    }
-
-    const btn = document.getElementById("btnZip");
-    const textoOriginal = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando ZIP…`;
-
-    try {
-        const fechaHoy = hoy();
-        const cupoActual = cfg.cupo || 'SIN_CUPO';
-        const raiz = `${fechaHoy}_${cupoActual}`;
-        const zip = new JSZip();
-        const carpetaRaiz = zip.folder(raiz);
-        const carpetaCurp = carpetaRaiz.folder(curp);
-        fotos.forEach(f => carpetaCurp.file(`${curp}_${f.key}.jpg`, dataURLtoBlob(f.dataURL)));
-
-        const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
-        descargar(blob, `${raiz}.zip`);
-
-        // Retroalimentación clara de éxito
-        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> ¡ZIP descargado correctamente!`;
-        setTimeout(() => {
-            btn.innerHTML = textoOriginal;
-            btn.disabled = false;
-            actuBtnZip(); // refresca el estado
-        }, 3000);
-    } catch (e) {
-        alert("Error al generar ZIP: " + e.message);
-        btn.innerHTML = textoOriginal;
-        btn.disabled = false;
-        actuBtnZip();
-    }
 }
 
 // ── NUEVO EXPEDIENTE (con candado) ───────────────────────────────
@@ -343,8 +291,6 @@ document.getElementById("btnNuevoExp").addEventListener("click", abrirNuevo);
 document.getElementById("btnXNew").addEventListener("click", cerrarNuevo);
 document.getElementById("mNuevo").addEventListener("click", e => { if (e.target === document.getElementById("mNuevo")) cerrarNuevo(); });
 document.getElementById("btnIniciarNuevo").addEventListener("click", iniciarNuevo);
-
-document.getElementById("btnZip").addEventListener("click", generarZip);
 
 document.getElementById("inCURP").addEventListener("input", function() {
     this.value = this.value.toUpperCase();
